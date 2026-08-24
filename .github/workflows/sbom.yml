@@ -27,14 +27,27 @@ jobs:
         run: npx --yes @cyclonedx/cyclonedx-npm --output-format JSON --output-file sbom.json
 
       - name: Upload SBOM to Dependency-Track
+        shell: powershell
         run: |
-          curl.exe -f -X POST "http://localhost:8081/api/v1/bom" `
-            -H "Content-Type: multipart/form-data" `
-            -H "X-Api-Key: ${{ secrets.DTRACK_API_KEY }}" `
-            -F "autoCreate=true" `
-            -F "projectName=Dependency_Check" `
-            -F "projectVersion=latest" `
-            -F "bom=@sbom.json"
+          # 1. Read the SBOM file and convert it to a Base64 string
+          $BomContents = Get-Content -Path "sbom.json" -Raw
+          $BomBytes = [System.Text.Encoding]::UTF8.GetBytes($BomContents)
+          $BomBase64 = [System.Convert]::ToBase64String($BomBytes)
+          
+          # 2. Create the JSON payload required by the PUT API
+          $Payload = @{
+              projectName = "Dependency_Check"
+              projectVersion = "latest"
+              autoCreate = $true
+              bom = $BomBase64
+          } | ConvertTo-Json
+          
+          # 3. Send the PUT request natively
+          Invoke-RestMethod -Uri "http://localhost:8081/api/v1/bom" `
+                            -Method Put `
+                            -Headers @{ "X-Api-Key" = "${{ secrets.DTRACK_API_KEY }}" } `
+                            -ContentType "application/json" `
+                            -Body $Payload
 
       - name: Upload SBOM artifact
         uses: actions/upload-artifact@v4
