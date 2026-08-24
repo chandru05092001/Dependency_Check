@@ -28,7 +28,7 @@ jobs:
 
       - name: Upload SBOM to Dependency-Track
         run: |
-          curl.exe -X POST "${{ secrets.DTRACK_URL }}/api/v1/bom" `
+          curl.exe -f -X POST "${{ secrets.DTRACK_URL }}/api/v1/bom" `
             -H "Content-Type: multipart/form-data" `
             -H "X-Api-Key: ${{ secrets.DTRACK_API_KEY }}" `
             -F "autoCreate=true" `
