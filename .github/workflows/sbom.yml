@@ -4,7 +4,6 @@ on:
   push:
     branches:
       - main
-
   workflow_dispatch:
 
 jobs:
@@ -31,10 +30,16 @@ jobs:
           format: cyclonedx-json
           output-file: sbom.json
 
-      - name: Check SBOM
+      - name: Upload SBOM to Dependency-Track
+        shell: bash
         run: |
-          ls -lh sbom.json
-          cat sbom.json | head -30
+          curl -X POST "${{ secrets.DTRACK_URL }}/api/v1/bom" \
+            -H "Content-Type: multipart/form-data" \
+            -H "X-Api-Key: ${{ secrets.DTRACK_API_KEY }}" \
+            -F "autoCreate=true" \
+            -F "projectName=Dependency_Check" \
+            -F "projectVersion=latest" \
+            -F "bom=@sbom.json"
 
       - name: Upload SBOM artifact
         uses: actions/upload-artifact@v4
