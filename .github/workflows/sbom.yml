@@ -31,15 +31,18 @@ jobs:
           output-file: sbom.json
 
       - name: Upload SBOM to Dependency-Track
-        shell: bash
+        shell: powershell
         run: |
-          curl -X POST "${{ secrets.DTRACK_URL }}/api/v1/bom" \
-            -H "Content-Type: multipart/form-data" \
-            -H "X-Api-Key: ${{ secrets.DTRACK_API_KEY }}" \
-            -F "autoCreate=true" \
-            -F "projectName=Dependency_Check" \
-            -F "projectVersion=latest" \
-            -F "bom=@sbom.json"
+          $headers = @{
+              "X-Api-Key" = "${{ secrets.DTRACK_API_KEY }}"
+          }
+          $form = @{
+              autoCreate = "true"
+              projectName = "Dependency_Check"
+              projectVersion = "latest"
+              bom = Get-Item -Path "sbom.json"
+          }
+          Invoke-RestMethod -Uri "${{ secrets.DTRACK_URL }}/api/v1/bom" -Method Post -Headers $headers -Form $form
 
       - name: Upload SBOM artifact
         uses: actions/upload-artifact@v4
